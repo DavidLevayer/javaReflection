@@ -1,6 +1,7 @@
 package server;
 
 import java.util.*;
+
 /**
  * Title:        Classes for TP1
  * Description:
@@ -25,12 +26,12 @@ public class Etudiant {
 		nom = unNom;
 	}
 
-	/*
-  public void inscrisDansCours(Cours unCours) {
-    cours.add(unCours);
-    unCours.ajouteEtudiant(this);
-  }
-	 */
+
+	public void inscrisDansCours(Cours unCours) {
+		cours.add(unCours);
+		unCours.ajouteEtudiant(this);
+	}
+
 
 	public void setNom(String unNom) {
 		nom = unNom;
@@ -40,7 +41,7 @@ public class Etudiant {
 		return nom;
 	}
 
-	/*
+
 	public float getMoyenne() {
 		float totalNotes = 0;
 		int nombreCours = 0;
@@ -51,14 +52,13 @@ public class Etudiant {
 		}
 		return totalNotes/nombreCours;
 	}
-	*/
+
 
 	public boolean isMe(String nom){
 		return this.nom.equals(nom);
 	}
 
 	public String toString() {
-		return nom;
-		//return nom + "[" + getMoyenne() + "]";
+		return nom + "[" + getMoyenne() + "]";
 	}
 }

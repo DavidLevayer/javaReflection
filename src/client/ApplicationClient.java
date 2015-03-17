@@ -1,8 +1,8 @@
 package client;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -24,46 +24,8 @@ public class ApplicationClient {
 		this.serverHostname = hostname;
 		this.serverPort = port;
 		
-		//initialise(entrees, sortie);
-		//scenario();
-		
-		String[] mArguments = new String[2];
-		mArguments[0] = "./src/server/Etudiant.java";
-		mArguments[1] = "./classes";		
-		traiteCommande(new Commande(Commande.TYPE_COMPILATION, mArguments));
-
-		
-		mArguments = new String[1];
-		mArguments[0] = "server.Etudiant";
-		traiteCommande(new Commande(Commande.TYPE_CHARGEMENT, mArguments));
-
-		mArguments = new String[2];
-		mArguments[0] = "server.Etudiant";
-		mArguments[1] = "etudiant1";
-		traiteCommande(new Commande(Commande.TYPE_CREATION, mArguments));
-
-		mArguments = new String[3];
-		mArguments[0] = "etudiant1";
-		mArguments[1] = "nom";
-		mArguments[2] = "David";
-		traiteCommande(new Commande(Commande.TYPE_ECRITURE, mArguments));
-
-		mArguments = new String[2];
-		mArguments[0] = "etudiant1";
-		mArguments[1] = "nom";
-		traiteCommande(new Commande(Commande.TYPE_LECTURE, mArguments));
-
-		mArguments = new String[3];
-		mArguments[0] = "etudiant1";
-		mArguments[1] = "isMe";
-		mArguments[2] = "java.lang.String:David";
-		traiteCommande(new Commande(Commande.TYPE_APPEL, mArguments));
-
-		mArguments = new String[3];
-		mArguments[0] = "etudiant1";
-		mArguments[1] = "isMe";
-		mArguments[2] = "java.lang.String:Bob";
-		traiteCommande(new Commande(Commande.TYPE_APPEL, mArguments));
+		initialise(entrees, sortie);
+		scenario();
 	}
 
 	/**
@@ -74,6 +36,10 @@ public class ApplicationClient {
 		
 		try {
 			String commandLine = fichier.readLine();
+			
+			if(commandLine == null)
+				return null;
+			
 			String[] commmandComponents = commandLine.split("#");
 			
 			Commande c = null;
@@ -113,7 +79,10 @@ public class ApplicationClient {
 				args = new String[3];
 				args[0] = commmandComponents[1];
 				args[1] = commmandComponents[2];
-				args[2] = commmandComponents[3];
+				if(commmandComponents.length == 4)
+					args[2] = commmandComponents[3];
+				else
+					args[2] = null;
 				c = new Commande(Commande.TYPE_APPEL, args);
 				break;
 			}
@@ -138,7 +107,7 @@ public class ApplicationClient {
 		}
 		
 		try {
-			sortieWriter = new PrintStream(new File(fichSortie));
+			sortieWriter = new PrintStream(new FileOutputStream(fichSortie,false));
 		} catch (FileNotFoundException e) {
 			System.out.println("Fichier "+fichSortie+ " introuvable");
 		}
@@ -162,12 +131,10 @@ public class ApplicationClient {
 			ObjectInputStream ois = new ObjectInputStream(mSocket.getInputStream());
 			Commande c = (Commande) ois.readObject();
 
-			System.out.println(c);
-
 			oos.close();
 			mSocket.close();
 
-			return c.getResult();
+			return c;
 
 		} catch (IOException | ClassNotFoundException e) {
 			System.out.println("Erreur lors du traitement de la commande");
@@ -181,15 +148,16 @@ public class ApplicationClient {
 	 * traiteCommande(Commande uneCommande).
 	 */
 	public void scenario() {
-		sortieWriter.println("Debut des traitements:");
+		sortieWriter.println("Debut des traitements:\n");
 		Commande prochaine = saisisCommande(commandesReader);
 		while (prochaine != null) {
-			sortieWriter.println("\tTraitement de la commande " + prochaine + " ...");
+			sortieWriter.println("\tTraitement de la commande...");
 			Object resultat = traiteCommande(prochaine);
-			sortieWriter.println("\t\tResultat: " + resultat);
+			sortieWriter.println(resultat);
 			prochaine = saisisCommande(commandesReader);
 		}
 		sortieWriter.println("Fin des traitements");
+		sortieWriter.close();
 	}
 
 	/**
@@ -203,12 +171,6 @@ public class ApplicationClient {
 	 */
 	public static void main(String[] args) {
 
-		// TODO Extract data from args
-		
-		String hostname = "localhost";
-		int port = 1111;
-
-		new ApplicationClient(hostname, port, null, null);
-		
+		new ApplicationClient(args[0], Integer.valueOf(args[1]), args[2], args[3]);		
 	}
 }

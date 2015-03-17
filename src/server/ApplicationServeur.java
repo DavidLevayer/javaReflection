@@ -115,18 +115,24 @@ public class ApplicationServeur {
 			break;
 		case Commande.TYPE_APPEL:
 
-			String[] params = args[2].split(",");
-			String[] types = new String[params.length];
-			String[] values = new String[params.length];
-
-			for(int i=0; i< params.length; i++){
-				String[] temp = params[i].split(":");
-				types[i] = temp[0];
-				values[i] = temp[1];
-			}
-
 			o = mObjects.get(args[0]);
-			traiterAppel(o, args[1], types, values);
+
+			if(args[2] != null){
+				String[] params = args[2].split(",");
+				String[] types = new String[params.length];
+				String[] values = new String[params.length];
+
+				for(int i=0; i< params.length; i++){
+					String[] temp = params[i].split(":");
+					types[i] = temp[0];
+					values[i] = temp[1];
+				}
+
+				traiterAppel(o, args[1], types, computeParameters(types, values));
+
+			} else {
+				traiterAppel(o, args[1], null, null);
+			}
 			break;
 		}
 
@@ -330,16 +336,32 @@ public class ApplicationServeur {
 		Class<?> mClass = pointeurObjet.getClass();
 		boolean criticalFailure = false;
 
-		// Récupération des classes liées aux types d'arguments
-		Class<?>[] classes = new Class[types.length];
+		boolean hasArguments = true;
+		if(types == null || valeurs == null)
+			hasArguments = false;
 
+		Class<?>[] classes = null;
 
-		for(int i=0; i<types.length; i++){
-			try{
-				classes[i] = Class.forName(types[i]);
-			} catch (ClassNotFoundException e){
-				System.out.println("Impossible de trouver la classe "+types[i]);
-				criticalFailure = true;
+		if(hasArguments){
+
+			// Récupération des classes liées aux types d'arguments
+			classes = new Class[types.length];
+
+			for(int i=0; i<types.length; i++){
+				try{
+					String type = types[i];
+					classes[i] = Class.forName(type);
+
+				} catch (ClassNotFoundException e){
+					// On essaye de trouver un type primitif correspondant
+					Class<?> mPrimitiveClass = matchPrimitive(types[i]);
+					if(mPrimitiveClass == null){
+						System.out.println("Impossible de trouver la classe "+types[i]+ " ("+nomFonction+")");
+						criticalFailure = true;
+					} else {
+						classes[i] = mPrimitiveClass;
+					}
+				}
 			}
 		}
 
@@ -378,6 +400,60 @@ public class ApplicationServeur {
 		}
 	}
 
+	private Object[] computeParameters(String[] types, Object[] values){
+
+		if(types == null || values == null)
+			return null;
+
+		Object[] result = new Object[values.length];
+
+		for(int i=0; i<types.length; i++){
+
+			String type = types[i];
+			String value = (String)values[i];
+
+			// On parse la valeur si besoin (de type Object)
+			if(type != "java.lang.String" && 
+					value.contains("ID(")){
+				value = value.substring(3, value.length()-1);
+				result[i] = mObjects.get(value);
+			}
+			
+			// On cast s'il s'agit d'un type primitif
+			else if(matchPrimitive(type) != null){
+				result[i] = castToPrimitiveType(type, value);
+			}
+
+			// Sinon : valeur envoyée
+			else {
+				result[i] = values[i];
+			}			
+		}
+		return result;
+	}
+
+	private Class<?> matchPrimitive(String type){
+		if( type.equals("boolean") ) return boolean.class;
+	    if( type.equals("byte") ) return byte.class;
+	    if( type.equals("short") ) return short.class;
+	    if( type.equals("int") ) return int.class;
+	    if( type.equals("long") ) return long.class;
+	    if( type.equals("float") ) return float.class;
+	    if( type.equals("double") ) return double.class;
+		return null;
+	}
+	
+	private Object castToPrimitiveType(String type, String value){
+		if( type.equals("boolean") ) return Boolean.valueOf(value).booleanValue();
+	    if( type.equals("byte") ) return Byte.valueOf(value).byteValue();
+	    if( type.equals("short") ) return Short.valueOf(value).shortValue();
+	    if( type.equals("int") ) return Integer.valueOf(value).intValue();
+	    if( type.equals("long") ) return Long.valueOf(value).longValue();
+	    if( type.equals("float") ) return Float.valueOf(value).floatValue();
+	    if( type.equals("double") ) return Double.valueOf(value).doubleValue();
+		return null;
+	}
+	
 	/**
 	 * programme principal. Prend 4 arguments: 
 	 * 1) numéro de port, 

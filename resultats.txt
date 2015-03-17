@@ -1,0 +1,172 @@
+Debut des traitements:
+	Traitement de la commande...
+Commande : Compilation
+--./src/server/Cours.java,./src/server/Etudiant.java
+--./classes
+Status : OK
+
+	Traitement de la commande...
+Commande : Chargement
+--server.Cours
+Status : OK
+
+	Traitement de la commande...
+Commande : Creation
+--server.Cours
+--8inf853
+Status : OK
+
+	Traitement de la commande...
+Commande : Ecriture
+--8inf853
+--titre
+--Architecture des applications
+Status : OK
+
+	Traitement de la commande...
+Commande : Lecture
+--8inf853
+--titre
+Status : OK
+Valeur du résultat : Architecture des applications
+
+	Traitement de la commande...
+Commande : Creation
+--server.Cours
+--8inf843
+Status : OK
+
+	Traitement de la commande...
+Commande : Ecriture
+--8inf843
+--titre
+--Systemes repartis
+Status : OK
+
+	Traitement de la commande...
+Commande : Chargement
+--server.Etudiant
+Status : OK
+
+	Traitement de la commande...
+Commande : Creation
+--server.Etudiant
+--mathilde
+Status : OK
+
+	Traitement de la commande...
+Commande : Ecriture
+--mathilde
+--nom
+--Mathilde Boivin
+Status : OK
+
+	Traitement de la commande...
+Commande : Creation
+--server.Etudiant
+--raymond
+Status : OK
+
+	Traitement de la commande...
+Commande : Ecriture
+--raymond
+--nom
+--Raymond Sauve
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--8inf853
+--getNote
+--server.Etudiant:ID(mathilde)
+Status : ERR
+
+	Traitement de la commande...
+Commande : Appel
+--mathilde
+--inscrisDansCours
+--server.Cours:ID(8inf853)
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--8inf853
+--attributeNote
+--server.Etudiant:ID(mathilde),float:3.7
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--8inf853
+--getNote
+--server.Etudiant:ID(mathilde)
+Status : OK
+Valeur du résultat : 3.7
+
+	Traitement de la commande...
+Commande : Appel
+--mathilde
+--inscrisDansCours
+--server.Cours:ID(8inf843)
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--8inf843
+--attributeNote
+--server.Etudiant:ID(mathilde),float:4.0
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--mathilde
+--getMoyenne
+--null
+Status : OK
+Valeur du résultat : 3.85
+
+	Traitement de la commande...
+Commande : Appel
+--raymond
+--inscrisDansCours
+--server.Cours:ID(8inf853)
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--raymond
+--inscrisDansCours
+--server.Cours:ID(8inf843)
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--8inf853
+--attributeNote
+--server.Etudiant:ID(raymond),float:3.0
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--8inf843
+--attributeNote
+--server.Etudiant:ID(raymond),float:2.7
+Status : OK
+
+	Traitement de la commande...
+Commande : Appel
+--mathilde
+--getMoyenne
+--null
+Status : OK
+Valeur du résultat : 3.85
+
+	Traitement de la commande...
+Commande : Appel
+--8inf853
+--toString
+--null
+Status : OK
+Valeur du résultat : Cours(Titre: Architecture des applications <Raymond Sauve[2.85] = 3.0 , Mathilde Boivin[3.85] = 3.7 >)
+
+Fin des traitements
