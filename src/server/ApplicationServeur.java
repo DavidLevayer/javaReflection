@@ -1,9 +1,12 @@
 package server;
 
 import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -19,9 +22,12 @@ import common.Commande;
 
 public class ApplicationServeur {
 
+	private int port;
+	
 	private boolean alive;
 	private ServerSocket mServerSocket;
 	private Socket mClientSocket;
+	private PrintStream sortieWriter;
 
 	/**
 	 * de la forme : <identifieur, référence vers l'objet>
@@ -33,15 +39,23 @@ public class ApplicationServeur {
 	/**
 	 * prend le numéro de port, crée un SocketServer sur le port
 	 */
-	public ApplicationServeur (int port) {
+	public ApplicationServeur (int mPort, String sourceDir, String classDir, String logFilename) {
 
+		this.port = mPort;
+		
+		try {
+			sortieWriter = new PrintStream(new FileOutputStream(logFilename,false));
+		} catch (FileNotFoundException e) {
+			System.out.println("Fichier "+logFilename+ " introuvable");
+		}
+		
 		try {
 			mServerSocket = new ServerSocket(port);
 			alive = true;
 			mObjects = new HashMap<String, Object>();
 			aVosOrdres();
 		} catch (IOException e) {
-			System.out.println("ApplicationServeur: Something went terribly wrong...");
+			sortieWriter.println("ApplicationServeur: Something went terribly wrong...");
 		}
 	}
 
@@ -52,14 +66,14 @@ public class ApplicationServeur {
 	 */
 	public void aVosOrdres() {
 
-		System.out.println("Serveur démarré");
+		sortieWriter.println("Serveur démarré");
 
 		try {
 
 			while(alive){
 
 				// en attente de connexion
-				System.out.println("En attente de client...");
+				sortieWriter.println("En attente de client...");
 				mClientSocket = mServerSocket.accept();
 
 				// Reception de la commande
@@ -77,7 +91,7 @@ public class ApplicationServeur {
 			mServerSocket.close();
 
 		} catch (IOException | ClassNotFoundException e) {
-			System.out.println("aVosOrdres: Something went terribly wrong...");
+			sortieWriter.println("aVosOrdres: Something went terribly wrong...");
 		}
 	}
 
@@ -104,7 +118,7 @@ public class ApplicationServeur {
 			try {
 				traiterCreation(Class.forName(args[0]), args[1]);
 			} catch (ClassNotFoundException e) {
-				System.out.println("Impossible d'instancier la classe "+args[0]);
+				sortieWriter.println("Impossible d'instancier la classe "+args[0]);
 			}
 			break;
 		case Commande.TYPE_COMPILATION:
@@ -179,11 +193,11 @@ public class ApplicationServeur {
 		}
 
 		if(!criticalFailure){
-			System.out.println("Lecture réussie");
-			System.out.println("Attribut : "+attribut);
+			sortieWriter.println("Lecture réussie");
+			sortieWriter.println("Attribut : "+attribut);
 			currentCommand.setResult(result);
 		} else {
-			System.out.println("Erreur lors de la lecture de l'attribut "+attribut);
+			sortieWriter.println("Erreur lors de la lecture de l'attribut "+attribut);
 		}
 
 		currentCommand.setResultCode(criticalFailure?Commande.COMMAND_ERR:Commande.COMMAND_OK);
@@ -239,10 +253,10 @@ public class ApplicationServeur {
 		}
 
 		if(!criticalFailure){
-			System.out.println("Ecriture réussie");
-			System.out.println("Attribut : "+attribut+" et valeur : "+valeur);
+			sortieWriter.println("Ecriture réussie");
+			sortieWriter.println("Attribut : "+attribut+" et valeur : "+valeur);
 		} else {
-			System.out.println("Erreur lors de l'écriture dans l'attribut "+attribut);
+			sortieWriter.println("Erreur lors de l'écriture dans l'attribut "+attribut);
 		}
 
 		currentCommand.setResultCode(criticalFailure?Commande.COMMAND_ERR:Commande.COMMAND_OK);
@@ -260,10 +274,10 @@ public class ApplicationServeur {
 		try {
 			Object o = classeDeLobjet.newInstance();
 			mObjects.put(identificateur, o);
-			System.out.println("Classe "+identificateur+":"
+			sortieWriter.println("Classe "+identificateur+":"
 					+classeDeLobjet.getName()+" créée avec succès");
 		} catch (InstantiationException | IllegalAccessException e) {
-			System.out.println("Erreur lors de la création de "+classeDeLobjet.getName());
+			sortieWriter.println("Erreur lors de la création de "+classeDeLobjet.getName());
 			criticalFailure = true;
 		}
 
@@ -282,9 +296,9 @@ public class ApplicationServeur {
 
 		try {
 			Class<?> c = mClassLoader.loadClass(nomQualifie);
-			System.out.println("Classe "+c.getName()+" chargée");
+			sortieWriter.println("Classe "+c.getName()+" chargée");
 		} catch (ClassNotFoundException e) {
-			System.out.println("Erreur lors du chargement de "+nomQualifie);
+			sortieWriter.println("Erreur lors du chargement de "+nomQualifie);
 			criticalFailure = true;
 		}
 
@@ -310,10 +324,10 @@ public class ApplicationServeur {
 					"-d", classPath, file);
 
 			if(result == 0) {
-				System.out.println(file+" compilé avec succès");
+				sortieWriter.println(file+" compilé avec succès");
 			}
 			else{
-				System.out.println("Erreur lors de la compilation de "+file);
+				sortieWriter.println("Erreur lors de la compilation de "+file);
 				criticalFailure = true;
 				break;
 			}
@@ -344,7 +358,7 @@ public class ApplicationServeur {
 
 		if(hasArguments){
 
-			// Récupération des classes liées aux types d'arguments
+			// ETAPE 1 : Récupération des classes liées aux types d'arguments
 			classes = new Class[types.length];
 
 			for(int i=0; i<types.length; i++){
@@ -356,9 +370,11 @@ public class ApplicationServeur {
 					// On essaye de trouver un type primitif correspondant
 					Class<?> mPrimitiveClass = matchPrimitive(types[i]);
 					if(mPrimitiveClass == null){
-						System.out.println("Impossible de trouver la classe "+types[i]+ " ("+nomFonction+")");
+						// Si aucun type primitif ne correspond, c'est une erreur
+						sortieWriter.println("Impossible de trouver la classe "+types[i]+ " ("+nomFonction+")");
 						criticalFailure = true;
 					} else {
+						// Si un type primitif correspond, alors on prend la classe correspondante
 						classes[i] = mPrimitiveClass;
 					}
 				}
@@ -367,17 +383,17 @@ public class ApplicationServeur {
 
 		if(!criticalFailure){
 			try {
-
+				// ETAPE 2 : Récupération de la méthode correspondante
 				Method mMethod = mClass.getMethod(nomFonction, classes);
 				Object result = mMethod.invoke(pointeurObjet, valeurs);
 
 				currentCommand.setResult(result);
-				System.out.println("Appel de la fonction " + nomFonction + " réussi");
+				sortieWriter.println("Appel de la fonction " + nomFonction + " réussi");
 
 			} catch (NoSuchMethodException | SecurityException | IllegalAccessException |
 					IllegalArgumentException | InvocationTargetException e) {
 				criticalFailure = true;
-				System.out.println("Erreur lors de l'appel de la fonction "+nomFonction);
+				sortieWriter.println("Erreur lors de l'appel de la fonction "+nomFonction);
 			} 
 		}
 
@@ -386,6 +402,10 @@ public class ApplicationServeur {
 
 	}
 
+	/**
+	 * Envoie le résultat au client (renvoie de la commande, avec
+	 * certains attributs complétés)
+	 */
 	private void sendResult(){
 
 		if(currentCommand != null && mClientSocket != null){
@@ -394,12 +414,16 @@ public class ApplicationServeur {
 				oos.writeObject(currentCommand);
 				oos.close();
 			} catch (IOException e) {
-				System.out.println("sendResult: Something went terribly wrong...");
+				sortieWriter.println("sendResult: Something went terribly wrong...");
 				e.printStackTrace();
 			}
 		}
 	}
 
+	/**
+	 * Modifie les valeurs des paramètres afin qu'ils soient
+	 * traités correctement par traiteAppel
+	 */
 	private Object[] computeParameters(String[] types, Object[] values){
 
 		if(types == null || values == null)
@@ -412,7 +436,7 @@ public class ApplicationServeur {
 			String type = types[i];
 			String value = (String)values[i];
 
-			// On parse la valeur si besoin (de type Object)
+			// On parse la valeur si besoin (de type ID(objet))
 			if(type != "java.lang.String" && 
 					value.contains("ID(")){
 				value = value.substring(3, value.length()-1);
@@ -424,7 +448,7 @@ public class ApplicationServeur {
 				result[i] = castToPrimitiveType(type, value);
 			}
 
-			// Sinon : valeur envoyée
+			// Sinon : valeur inchangée
 			else {
 				result[i] = values[i];
 			}			
@@ -432,6 +456,10 @@ public class ApplicationServeur {
 		return result;
 	}
 
+	/**
+	 * Vérifie si la chaine passée en paramètre correspond
+	 * à un type primitif de Java (et renvoie la classe associée)
+	 */
 	private Class<?> matchPrimitive(String type){
 		if( type.equals("boolean") ) return boolean.class;
 	    if( type.equals("byte") ) return byte.class;
@@ -443,6 +471,10 @@ public class ApplicationServeur {
 		return null;
 	}
 	
+	/**
+	 * Cast la valeur passée en paramètre en fonction du type
+	 * primitif passé en paramètre
+	 */
 	private Object castToPrimitiveType(String type, String value){
 		if( type.equals("boolean") ) return Boolean.valueOf(value).booleanValue();
 	    if( type.equals("byte") ) return Byte.valueOf(value).byteValue();
@@ -465,7 +497,6 @@ public class ApplicationServeur {
 	 */
 	public static void main(String[] args) {
 
-		int port = 1111;
-		new ApplicationServeur(port);
+		new ApplicationServeur(Integer.valueOf(args[0]),args[1],args[2],args[3]);
 	}	
 }

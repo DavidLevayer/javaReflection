@@ -1,4 +1,5 @@
 Debut des traitements:
+
 	Traitement de la commande...
 Commande : Compilation
 --./src/server/Cours.java,./src/server/Etudiant.java
@@ -167,6 +168,6 @@ Commande : Appel
 --toString
 --null
 Status : OK
-Valeur du résultat : Cours(Titre: Architecture des applications <Raymond Sauve[2.85] = 3.0 , Mathilde Boivin[3.85] = 3.7 >)
+Valeur du résultat : Cours(Titre: Architecture des applications <Mathilde Boivin[3.85] = 3.7 , Raymond Sauve[2.85] = 3.0 >)
 
 Fin des traitements
